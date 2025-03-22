@@ -77,10 +77,10 @@ function initializeGame() {
     const gameBoardElement = document.getElementById('gameBoard');
     const statusMessage = document.getElementById('statusMessage');
     const gameboard = new Gameboard();
-    const player1 = new Player('Player 1', 'X');
-    const player2 = new Player('Player 2', 'O');
+    const player1 = new Player('Player X', 'X');
+    const player2 = new Player('Player O', 'O');
     const gameController = new GameController(player1, player2, gameboard);
-    
+
 
     // Clear the gameboard
     gameBoardElement.innerHTML = '';
@@ -94,8 +94,9 @@ function initializeGame() {
 
         // Add click event listener for each cell
         cell.addEventListener('click', () => {
+            console.log(gameController.currentPlayer);
             if (!gameController.gameboard.board[i]) {
-                gameController.makeMove(i);
+                gameController.playTurn(i);
                 cell.textContent = gameController.currentPlayer.symbol;
 
                 // Check for winner or draw
@@ -106,7 +107,7 @@ function initializeGame() {
                 } else if (gameController.isDraw()) {
                     statusMessage.textContent = "It's a draw!";
                 } else {
-                    gameController.switchPlayer();
+                    gameController.switchTurn();
                     statusMessage.textContent = `${gameController.currentPlayer.name}'s turn`;
                 }
             }
