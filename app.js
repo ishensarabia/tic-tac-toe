@@ -1,3 +1,6 @@
+const playButton = document.getElementById("playButton");
+let isGameStarted = false;
+
 const Gameboard = () => {
   const board = Array(9).fill(null);
 
@@ -71,9 +74,14 @@ const GameController = (gameboard, player1, player2) => {
     cells.forEach((cell) => (cell.style.pointerEvents = "none"));
   };
 
-
-
-  return { disableBoard, playTurn, checkWinner, isDraw, getCurrentPlayer, gameboard };
+  return {
+    disableBoard,
+    playTurn,
+    checkWinner,
+    isDraw,
+    getCurrentPlayer,
+    gameboard,
+  };
 };
 
 function createPlayerNamePrompt(player) {
@@ -165,8 +173,11 @@ async function initializeGame() {
 
   // Restart the game
   const restartGame = () => {
-    gameController.disableBoard();
-    initializeGame();
+    if (isGameStarted) {
+      isGameStarted = false;
+      gameController.disableBoard();
+      initializeGame();
+    }
   };
 
   // Attach restart button event listener
@@ -187,10 +198,11 @@ function enableBoard() {
   cells.forEach((cell) => (cell.style.pointerEvents = "auto"));
 }
 
-const playButton = document.getElementById("playButton");
-
 playButton.addEventListener("click", () => {
   console.log("play button clicked");
   // Call initializeGame to start the game
-  initializeGame();
+  if (!isGameStarted) {
+    isGameStarted = true;
+    initializeGame();
+  }
 });
