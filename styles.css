@@ -5,7 +5,7 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #f4f4f4;
+    background-color: #252525;
 }
 
 .game-container {
@@ -21,7 +21,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #fff;
+    background-color: #585858;
     border: 1px solid #ccc;
     font-size: 2rem;
     cursor: pointer;
@@ -35,4 +35,5 @@ body {
     margin-top: 20px;
     text-align: center;
     font-size: 1.2rem;
+    color: aliceblue;
 }
