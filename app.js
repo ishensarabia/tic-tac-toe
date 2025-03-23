@@ -160,5 +160,10 @@ function enableBoard() {
   cells.forEach((cell) => (cell.style.pointerEvents = "auto"));
 }
 
-// Call initializeGame to start the game
-initializeGame();
+const playButton = document.getElementById("playButton");
+
+playButton.addEventListener("click", () => {
+  console.log("play button clicked");
+  // Call initializeGame to start the game
+  initializeGame();
+});
