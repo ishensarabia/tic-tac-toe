@@ -14,14 +14,11 @@ const Gameboard = () => {
   return { placeMarker, getBoard };
 };
 
-const Player = (name, marker) => {
-  return { name, marker };
+const Player = (marker) => {
+  return { marker };
 };
 
-const GameController = (player1Name, player2Name) => {
-  const gameboard = Gameboard();
-  const player1 = Player(player1Name, 'X');
-  const player2 = Player(player2Name, 'O');
+const GameController = (gameboard, player1, player2) => {
   let currentPlayer = player1;
 
   const switchTurn = () => {
@@ -36,9 +33,14 @@ const GameController = (player1Name, player2Name) => {
 
   const checkWinner = () => {
     const winningCombinations = [
-      [0, 1, 2], [3, 4, 5], [6, 7, 8],
-      [0, 3, 6], [1, 4, 7], [2, 5, 8],
-      [0, 4, 8], [2, 4, 6]
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
     ];
 
     for (const combo of winningCombinations) {
@@ -56,18 +58,44 @@ const GameController = (player1Name, player2Name) => {
   };
 
   const isDraw = () => {
-    return gameboard.getBoard().every(cell => cell !== null);
+    return gameboard.getBoard().every((cell) => cell !== null);
   };
 
   const getCurrentPlayer = () => currentPlayer;
 
-
   return { playTurn, checkWinner, isDraw, getCurrentPlayer, gameboard };
 };
 
+function createPlayerNamePrompt(player) {
+  return new Promise((resolve) => {
+    // Create the UI for the prompt
+    const prompt = document.createElement("div");
+    prompt.classList.add("prompt");
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = `Enter ${player.marker}'s name`;
+
+    const button = document.createElement("button");
+    button.textContent = "Submit";
+
+    button.addEventListener("click", () => {
+      const playerName = input.value.trim();
+      if (playerName) {
+        player.name = playerName;
+        document.body.removeChild(prompt);
+        resolve(); // Resolve the promise when the name is submitted
+      }
+    });
+
+    prompt.appendChild(input);
+    prompt.appendChild(button);
+    document.body.appendChild(prompt);
+  });
+}
 
 // Initialize the game
-function initializeGame() {
+async function initializeGame() {
   // Get DOM elements
   const gameBoardElement = document.getElementById("gameBoard");
   const statusMessage = document.getElementById("statusMessage");
@@ -75,14 +103,20 @@ function initializeGame() {
 
   // Create game components
   const gameboard = Gameboard();
-  const player1 = Player("Player X", "X");
-  const player2 = Player("Player O", "O");
-  const gameController = GameController(player1.name, player2.name);
+  const player1 = Player("X");
+  const player2 = Player("O");
+
+
+  // Wait for players to enter their names
+  await createPlayerNamePrompt(player1);
+  await createPlayerNamePrompt(player2);
+  
+  const gameController = GameController(gameboard, player1, player2);
 
   // Helper function to render the gameboard
   const renderBoard = () => {
     gameBoardElement.innerHTML = ""; // Clear the board
-    const board = gameController.gameboard.getBoard();
+    const board = gameboard.getBoard();
 
     board.forEach((_, index) => {
       const cell = document.createElement("div");
@@ -97,13 +131,13 @@ function initializeGame() {
 
   statusMessage.textContent = `${player1.name}'s turn`;
 
-
   // Handle cell click
   const handleCellClick = (cell, index) => {
+    // Check if the cell is already filled
     if (!gameController.gameboard.getBoard()[index]) {
-      gameController.playTurn(index);
       cell.textContent = gameController.getCurrentPlayer().marker;
       cell.style.color = "white";
+      gameController.playTurn(index);
 
       // Check for winner or draw
       const winner = gameController.checkWinner();
@@ -113,7 +147,9 @@ function initializeGame() {
       } else if (gameController.isDraw()) {
         statusMessage.textContent = "It's a draw!";
       } else {
-        statusMessage.textContent = `${gameController.getCurrentPlayer().name}'s turn`;
+        statusMessage.textContent = `${
+          gameController.getCurrentPlayer().name
+        }'s turn`;
       }
     }
   };
@@ -121,7 +157,7 @@ function initializeGame() {
   // Disable further clicks on the board
   const disableBoard = () => {
     const cells = document.querySelectorAll(".cell");
-    cells.forEach(cell => (cell.style.pointerEvents = "none"));
+    cells.forEach((cell) => (cell.style.pointerEvents = "none"));
   };
 
   // Restart the game
@@ -137,6 +173,8 @@ function initializeGame() {
   statusMessage.textContent = `${player1.name}'s turn`;
   renderBoard();
 }
+
+
 
 function disableBoard() {
   const cells = document.querySelectorAll(".cell");
