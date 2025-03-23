@@ -63,7 +63,17 @@ const GameController = (gameboard, player1, player2) => {
 
   const getCurrentPlayer = () => currentPlayer;
 
-  return { playTurn, checkWinner, isDraw, getCurrentPlayer, gameboard };
+  // Disable further clicks on the board
+  const disableBoard = () => {
+    gameboard.board = Array(9).fill(null);
+
+    const cells = document.querySelectorAll(".cell");
+    cells.forEach((cell) => (cell.style.pointerEvents = "none"));
+  };
+
+
+
+  return { disableBoard, playTurn, checkWinner, isDraw, getCurrentPlayer, gameboard };
 };
 
 function createPlayerNamePrompt(player) {
@@ -106,11 +116,10 @@ async function initializeGame() {
   const player1 = Player("X");
   const player2 = Player("O");
 
-
   // Wait for players to enter their names
   await createPlayerNamePrompt(player1);
   await createPlayerNamePrompt(player2);
-  
+
   const gameController = GameController(gameboard, player1, player2);
 
   // Helper function to render the gameboard
@@ -154,15 +163,9 @@ async function initializeGame() {
     }
   };
 
-  // Disable further clicks on the board
-  const disableBoard = () => {
-    const cells = document.querySelectorAll(".cell");
-    cells.forEach((cell) => (cell.style.pointerEvents = "none"));
-  };
-
   // Restart the game
   const restartGame = () => {
-    gameController.gameboard.board = Array(9).fill(null);
+    gameController.disableBoard();
     initializeGame();
   };
 
@@ -173,8 +176,6 @@ async function initializeGame() {
   statusMessage.textContent = `${player1.name}'s turn`;
   renderBoard();
 }
-
-
 
 function disableBoard() {
   const cells = document.querySelectorAll(".cell");
