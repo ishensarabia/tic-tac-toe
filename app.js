@@ -1,5 +1,40 @@
-const playButton = document.getElementById("playButton");
-let isGameStarted = false;
+function createPlayerNamePrompt(player) {
+  return new Promise((resolve) => {
+    // Create the UI for the prompt
+    const prompt = document.createElement("div");
+    prompt.style.position = "fixed";
+    prompt.style.top = "50%";
+    prompt.style.left = "50%";
+    prompt.style.transform = "translate(-50%, -50%)";
+    prompt.style.backgroundColor = "#333";
+    prompt.style.color = "white";
+    prompt.style.padding = "20px";
+    prompt.style.borderRadius = "10px";
+    prompt.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+    prompt.style.textAlign = "center";
+    prompt.classList.add("prompt");
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = `Enter ${player.marker}'s name`;
+
+    const button = document.createElement("button");
+    button.textContent = "Submit";
+
+    button.addEventListener("click", () => {
+      const playerName = input.value.trim();
+      if (playerName) {
+        player.name = playerName;
+        document.body.removeChild(prompt);
+        resolve(); // Resolve the promise when the name is submitted
+      }
+    });
+
+    prompt.appendChild(input);
+    prompt.appendChild(button);
+    document.body.appendChild(prompt);
+  });
+}
 
 const Gameboard = () => {
   const board = Array(9).fill(null);
@@ -84,53 +119,52 @@ const GameController = (gameboard, player1, player2) => {
   };
 };
 
-function createPlayerNamePrompt(player) {
-  return new Promise((resolve) => {
-    // Create the UI for the prompt
-    const prompt = document.createElement("div");
-    prompt.classList.add("prompt");
+const Game = (
+  playButton,
+  restartButton,
+  gameBoardElement,
+  statusMessageElement
+) => {
+  let isGameStarted = false;
+  let gameboard = null;
+  let player1 = null;
+  let player2 = null;
+  let gameController = null;
 
-    const input = document.createElement("input");
-    input.type = "text";
-    input.placeholder = `Enter ${player.marker}'s name`;
+  const startGame = async () => {
+    if (isGameStarted) return;
 
-    const button = document.createElement("button");
-    button.textContent = "Submit";
+    isGameStarted = true;
 
-    button.addEventListener("click", () => {
-      const playerName = input.value.trim();
-      if (playerName) {
-        player.name = playerName;
-        document.body.removeChild(prompt);
-        resolve(); // Resolve the promise when the name is submitted
-      }
-    });
+    // Hide the play button
+    playButton.style.display = "none";
 
-    prompt.appendChild(input);
-    prompt.appendChild(button);
-    document.body.appendChild(prompt);
-  });
-}
+    // Initialize game components
+    gameboard = Gameboard();
+    player1 = Player("X");
+    player2 = Player("O");
 
-// Initialize the game
-async function initializeGame() {
-  // Get DOM elements
-  const gameBoardElement = document.getElementById("gameBoard");
-  const statusMessage = document.getElementById("statusMessage");
-  const restartButton = document.getElementById("restartButton");
+    // Prompt players for their names
+    await promptPlayerNames();
 
-  // Create game components
-  const gameboard = Gameboard();
-  const player1 = Player("X");
-  const player2 = Player("O");
+    // Initialize the game controller
+    gameController = GameController(gameboard, player1, player2);
 
-  // Wait for players to enter their names
-  await createPlayerNamePrompt(player1);
-  await createPlayerNamePrompt(player2);
+    // Render the gameboard
+    renderBoard();
 
-  const gameController = GameController(gameboard, player1, player2);
+    // Set the initial status message
+    updateStatusMessage(`${player1.name}'s (${player1.marker}) turn`);
 
-  // Helper function to render the gameboard
+    // Show the restart button
+    restartButton.style.display = "block";
+  };
+
+  const promptPlayerNames = async () => {
+    await createPlayerNamePrompt(player1);
+    await createPlayerNamePrompt(player2);
+  };
+
   const renderBoard = () => {
     gameBoardElement.innerHTML = ""; // Clear the board
     const board = gameboard.getBoard();
@@ -146,11 +180,7 @@ async function initializeGame() {
     });
   };
 
-  statusMessage.textContent = `${player1.name}'s turn`;
-
-  // Handle cell click
   const handleCellClick = (cell, index) => {
-    // Check if the cell is already filled
     if (!gameController.gameboard.getBoard()[index]) {
       cell.textContent = gameController.getCurrentPlayer().marker;
       cell.style.color = "white";
@@ -159,50 +189,59 @@ async function initializeGame() {
       // Check for winner or draw
       const winner = gameController.checkWinner();
       if (winner) {
-        statusMessage.textContent = `${winner.name} wins!`;
+        updateStatusMessage(`${winner.name} (${winner.marker}) wins!`);
         disableBoard();
       } else if (gameController.isDraw()) {
-        statusMessage.textContent = "It's a draw!";
+        updateStatusMessage("It's a draw!");
       } else {
-        statusMessage.textContent = `${
-          gameController.getCurrentPlayer().name
-        }'s turn`;
+        updateStatusMessage(
+          `${gameController.getCurrentPlayer().name}'s (${
+            gameController.getCurrentPlayer().marker
+          }) turn`
+        );
       }
     }
   };
 
-  // Restart the game
   const restartGame = () => {
-    if (isGameStarted) {
-      isGameStarted = false;
-      gameController.disableBoard();
-      initializeGame();
-    }
+    if (!isGameStarted) return;
+
+    isGameStarted = false;
+
+    startGame();
   };
 
-  // Attach restart button event listener
+  const disableBoard = () => {
+    const cells = document.querySelectorAll(".cell");
+    cells.forEach((cell) => (cell.style.pointerEvents = "none"));
+  };
+
+  const updateStatusMessage = (message) => {
+    statusMessageElement.textContent = message;
+  };
+
+  // Attach event listeners
+  playButton.addEventListener("click", startGame);
   restartButton.addEventListener("click", restartGame);
 
-  // Initialize the game
-  statusMessage.textContent = `${player1.name}'s turn`;
-  renderBoard();
-}
+  return {
+    startGame,
+    restartGame,
+    renderBoard,
+    disableBoard,
+    updateStatusMessage,
+  };
+};
 
-function disableBoard() {
-  const cells = document.querySelectorAll(".cell");
-  cells.forEach((cell) => (cell.style.pointerEvents = "none"));
-}
+// Initialize the game
+const playButton = document.getElementById("playButton");
+const restartButton = document.getElementById("restart-button");
+const gameBoardElement = document.getElementById("gameBoard");
+const statusMessageElement = document.getElementById("statusMessage");
 
-function enableBoard() {
-  const cells = document.querySelectorAll(".cell");
-  cells.forEach((cell) => (cell.style.pointerEvents = "auto"));
-}
-
-playButton.addEventListener("click", () => {
-  console.log("play button clicked");
-  // Call initializeGame to start the game
-  if (!isGameStarted) {
-    isGameStarted = true;
-    initializeGame();
-  }
-});
+const game = Game(
+  playButton,
+  restartButton,
+  gameBoardElement,
+  statusMessageElement
+);
