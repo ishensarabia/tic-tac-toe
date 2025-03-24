@@ -207,6 +207,7 @@ const Game = (
     if (!isGameStarted) return;
 
     isGameStarted = false;
+    disableBoard();
 
     startGame();
   };
