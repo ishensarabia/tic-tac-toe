@@ -36,138 +36,156 @@ function createPlayerNamePrompt(player) {
   });
 }
 
-const Gameboard = () => {
-  const board = Array(9).fill(null);
+class Gameboard {
+  constructor() {
+    this.board = Array(9).fill(null);
+  }
 
-  const placeMarker = (index, marker) => {
-    if (board[index] === null) {
-      board[index] = marker;
+  placeMarker(index, marker) {
+    if (this.board[index] === null) {
+      this.board[index] = marker;
       return true;
     }
     return false;
-  };
+  }
 
-  const getBoard = () => board;
+  getBoard() {
+    return this.board;
+  }
 
-  return { placeMarker, getBoard };
-};
+  resetBoard() {
+    this.board = Array(9).fill(null);
+  }
+}
 
-const Player = (marker) => {
-  return { marker };
-};
+class Player {
+  constructor(name, marker) {
+    this.name = name;
+    this.marker = marker;
+  }
+}
 
-const GameController = (gameboard, player1, player2) => {
-  let currentPlayer = player1;
+class GameController {
+  constructor(gameboard, player1, player2) {
+    this.gameboard = gameboard;
+    this.player1 = player1;
+    this.player2 = player2;
+    this.currentPlayer = player1;
+  }
 
-  const switchTurn = () => {
-    currentPlayer = currentPlayer === player1 ? player2 : player1;
-  };
+  switchTurn() {
+    this.currentPlayer =
+      this.currentPlayer === this.player1 ? this.player2 : this.player1;
+  }
 
-  const playTurn = (index) => {
-    if (gameboard.placeMarker(index, currentPlayer.marker)) {
-      switchTurn();
+  playTurn(index) {
+    if (this.gameboard.placeMarker(index, this.currentPlayer.marker)) {
+      this.switchTurn();
     }
-  };
+  }
 
-  const checkWinner = () => {
+  checkWinner() {
     const winningCombinations = [
       [0, 1, 2],
       [3, 4, 5],
-      [6, 7, 8],
+      [6, 7, 8], // Rows
       [0, 3, 6],
       [1, 4, 7],
-      [2, 5, 8],
+      [2, 5, 8], // Columns
       [0, 4, 8],
-      [2, 4, 6],
+      [2, 4, 6], // Diagonals
     ];
 
     for (const combo of winningCombinations) {
       const [a, b, c] = combo;
-      if (
-        gameboard.getBoard()[a] &&
-        gameboard.getBoard()[a] === gameboard.getBoard()[b] &&
-        gameboard.getBoard()[a] === gameboard.getBoard()[c]
-      ) {
-        return currentPlayer === player1 ? player2 : player1;
+      const board = this.gameboard.getBoard();
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return this.currentPlayer === this.player1
+          ? this.player2
+          : this.player1; // Return the winner
       }
     }
 
     return null;
-  };
+  }
 
-  const isDraw = () => {
-    return gameboard.getBoard().every((cell) => cell !== null);
-  };
+  isDraw() {
+    return this.gameboard.getBoard().every((cell) => cell !== null);
+  }
 
-  const getCurrentPlayer = () => currentPlayer;
+  getCurrentPlayer() {
+    return this.currentPlayer;
+  }
 
-  // Disable further clicks on the board
-  const disableBoard = () => {
-    gameboard.board = Array(9).fill(null);
+  resetGame() {
+    this.gameboard.resetBoard();
+    this.currentPlayer = this.player1;
+  }
+}
 
-    const cells = document.querySelectorAll(".cell");
-    cells.forEach((cell) => (cell.style.pointerEvents = "none"));
-  };
+class Game {
+  constructor() {
+    const playButton = document.getElementById("playButton");
+    const restartButton = document.getElementById("restart-button");
+    const gameBoardElement = document.getElementById("gameBoard");
+    const statusMessageElement = document.getElementById("statusMessage");
+    this.playButton = playButton;
+    this.restartButton = restartButton;
+    this.gameBoardElement = gameBoardElement;
+    this.statusMessageElement = statusMessageElement;
+    this.isGameStarted = false;
+    this.gameboard = null;
+    this.player1 = null;
+    this.player2 = null;
+    this.gameController = null;
 
-  return {
-    disableBoard,
-    playTurn,
-    checkWinner,
-    isDraw,
-    getCurrentPlayer,
-    gameboard,
-  };
-};
+    // Attach event listeners
+    this.playButton.addEventListener("click", () => this.startGame());
+    this.restartButton.addEventListener("click", () => this.restartGame());
+  }
 
-const Game = (
-  playButton,
-  restartButton,
-  gameBoardElement,
-  statusMessageElement
-) => {
-  let isGameStarted = false;
-  let gameboard = null;
-  let player1 = null;
-  let player2 = null;
-  let gameController = null;
+  async startGame() {
+    if (this.isGameStarted) return;
 
-  const startGame = async () => {
-    if (isGameStarted) return;
-
-    isGameStarted = true;
+    this.isGameStarted = true;
 
     // Hide the play button
-    playButton.style.display = "none";
+    this.playButton.style.display = "none";
 
     // Initialize game components
-    gameboard = Gameboard();
-    player1 = Player("X");
-    player2 = Player("O");
+    this.gameboard = new Gameboard();
+    this.player1 = new Player("Player X", "X");
+    this.player2 = new Player("Player O", "O");
 
     // Prompt players for their names
-    await promptPlayerNames();
+    await this.promptPlayerNames();
 
     // Initialize the game controller
-    gameController = GameController(gameboard, player1, player2);
+    this.gameController = new GameController(
+      this.gameboard,
+      this.player1,
+      this.player2
+    );
 
     // Render the gameboard
-    renderBoard();
+    this.renderBoard();
 
     // Set the initial status message
-    updateStatusMessage(`${player1.name}'s (${player1.marker}) turn`);
+    this.updateStatusMessage(
+      `${this.player1.name}'s (${this.player1.marker}) turn`
+    );
+  }
 
+  async promptPlayerNames() {
+    await createPlayerNamePrompt(this.player1);
+    await createPlayerNamePrompt(this.player2);
     // Show the restart button
-    restartButton.style.display = "block";
-  };
+    this.restartButton.style.display = "block";
+  }
 
-  const promptPlayerNames = async () => {
-    await createPlayerNamePrompt(player1);
-    await createPlayerNamePrompt(player2);
-  };
-
-  const renderBoard = () => {
-    gameBoardElement.innerHTML = ""; // Clear the board
-    const board = gameboard.getBoard();
+  renderBoard() {
+    this.gameBoardElement.innerHTML = ""; // Clear the board
+    const board = this.gameboard.getBoard();
 
     board.forEach((_, index) => {
       const cell = document.createElement("div");
@@ -175,74 +193,51 @@ const Game = (
       cell.dataset.index = index;
 
       // Add click event listener for each cell
-      cell.addEventListener("click", () => handleCellClick(cell, index));
-      gameBoardElement.appendChild(cell);
+      cell.addEventListener("click", () => this.handleCellClick(cell, index));
+      this.gameBoardElement.appendChild(cell);
     });
-  };
+  }
 
-  const handleCellClick = (cell, index) => {
-    if (!gameController.gameboard.getBoard()[index]) {
-      cell.textContent = gameController.getCurrentPlayer().marker;
+  handleCellClick(cell, index) {
+    if (!this.gameController.gameboard.getBoard()[index]) {
+      cell.textContent = this.gameController.getCurrentPlayer().marker;
       cell.style.color = "white";
-      gameController.playTurn(index);
+      this.gameController.playTurn(index);
 
       // Check for winner or draw
-      const winner = gameController.checkWinner();
+      const winner = this.gameController.checkWinner();
       if (winner) {
-        updateStatusMessage(`${winner.name} (${winner.marker}) wins!`);
-        disableBoard();
-      } else if (gameController.isDraw()) {
-        updateStatusMessage("It's a draw!");
+        this.updateStatusMessage(`${winner.name} (${winner.marker}) wins!`);
+        this.disableBoard();
+      } else if (this.gameController.isDraw()) {
+        this.updateStatusMessage("It's a draw!");
       } else {
-        updateStatusMessage(
-          `${gameController.getCurrentPlayer().name}'s (${
-            gameController.getCurrentPlayer().marker
+        this.updateStatusMessage(
+          `${this.gameController.getCurrentPlayer().name}'s (${
+            this.gameController.getCurrentPlayer().marker
           }) turn`
         );
       }
     }
-  };
+  }
 
-  const restartGame = () => {
-    if (!isGameStarted) return;
+  restartGame() {
+    if (!this.isGameStarted) return;
 
-    isGameStarted = false;
-    disableBoard();
+    this.isGameStarted = false;
+    this.disableBoard();
+    this.startGame();
+  }
 
-    startGame();
-  };
-
-  const disableBoard = () => {
+  disableBoard() {
     const cells = document.querySelectorAll(".cell");
     cells.forEach((cell) => (cell.style.pointerEvents = "none"));
-  };
+  }
 
-  const updateStatusMessage = (message) => {
-    statusMessageElement.textContent = message;
-  };
-
-  // Attach event listeners
-  playButton.addEventListener("click", startGame);
-  restartButton.addEventListener("click", restartGame);
-
-  return {
-    startGame,
-    restartGame,
-    renderBoard,
-    disableBoard,
-    updateStatusMessage,
-  };
-};
+  updateStatusMessage(message) {
+    this.statusMessageElement.textContent = message;
+  }
+}
 
 // Initialize the game
-const playButton = document.getElementById("playButton");
-const restartButton = document.getElementById("restart-button");
-const gameBoardElement = document.getElementById("gameBoard");
-const statusMessageElement = document.getElementById("statusMessage");
-
-const game = Game(
-  playButton,
-  restartButton,
-  gameBoardElement,
-  statusMessageElement
-);
+const game = new Game();
